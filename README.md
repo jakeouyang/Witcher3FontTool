@@ -8,6 +8,8 @@
 
 非官方的《巫师 3：狂猎》次世代版（4.0+）中文字体 MOD 生成器。选择任意 TrueType / TrueType Collection 字体，一键生成并安装到游戏 `Mods` 目录，替换游戏 UI 的简体中文 / 繁体中文 / 英文字体。
 
+**[⬇ 下载最新版](https://github.com/jakeouyang/Witcher3FontTool/releases/latest)**（Windows x64 单文件，自带 .NET 运行时）
+
 ![CI](https://github.com/jakeouyang/Witcher3FontTool/actions/workflows/ci.yml/badge.svg)
 
 ### 特性
@@ -80,6 +82,8 @@ Unofficial font replacement MOD generator for The Witcher 3: Wild Hunt next-gen 
 Pick any TrueType / TrueType Collection font, generate a MOD, and install it straight into
 the game's `Mods` directory to replace the Simplified Chinese / Traditional Chinese /
 English UI fonts.
+
+**[⬇ Download latest](https://github.com/jakeouyang/Witcher3FontTool/releases/latest)** (Windows x64 single-file, self-contained)
 
 ### Features
 
