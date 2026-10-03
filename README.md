@@ -12,6 +12,14 @@
 
 ![CI](https://github.com/jakeouyang/Witcher3FontTool/actions/workflows/ci.yml/badge.svg)
 
+## 截图
+
+![工具界面](docs/app.png)
+*工具界面：选择游戏目录、字体文件与目标语言，一键生成并安装*
+
+![游戏内效果](docs/game.jpg)
+*游戏内效果：替换字体后主菜单与 UI 的中文渲染*
+
 ### 特性
 
 - **GUI / CLI 双模式**：无参数启动图形界面；完整功能亦可通过命令行使用
@@ -84,6 +92,8 @@ the game's `Mods` directory to replace the Simplified Chinese / Traditional Chin
 English UI fonts.
 
 **[⬇ Download latest](https://github.com/jakeouyang/Witcher3FontTool/releases/latest)** (Windows x64 single-file, self-contained)
+
+See [screenshots](#截图) above.
 
 ### Features
 
