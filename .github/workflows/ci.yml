@@ -27,14 +27,27 @@ jobs:
       - name: Smoke test (generate + verify with a system font)
         shell: pwsh
         run: |
-          $exe = "src/Witcher3FontTool/bin/Release/net8.0-windows/Witcher3FontTool.exe"
-          $out = "smoke-test"
+          $ErrorActionPreference = 'Continue'
+          $exe = Join-Path $env:GITHUB_WORKSPACE "src/Witcher3FontTool/bin/Release/net8.0-windows/Witcher3FontTool.exe"
+          if (-not (Test-Path $exe)) { throw "exe not found: $exe" }
+          $font = "$env:WINDIR\Fonts\arial.ttf"
+          if (-not (Test-Path $font)) { $font = (Get-ChildItem "$env:WINDIR\Fonts" -Filter *.ttf | Select-Object -First 1).FullName }
+          Write-Host "Using font: $font (exists: $(Test-Path $font))"
+          if (-not (Test-Path $font)) { throw "no .ttf font found in $env:WINDIR\Fonts" }
+          $out = Join-Path $env:GITHUB_WORKSPACE "smoke-test"
           if (Test-Path $out) { Remove-Item $out -Recurse -Force }
-          & $exe generate "$env:WINDIR\Fonts\arial.ttf" $out --english
-          if ($LASTEXITCODE -ne 0) { throw "generate failed" }
-          & $exe verify "$out/content/codebayin.bundle"
-          if ($LASTEXITCODE -ne 0) { throw "verify failed" }
+
+          # The app is a GUI-subsystem executable: PowerShell does not wait for it unless forced.
+          $p = Start-Process -FilePath $exe -ArgumentList @('generate', "`"$font`"", "`"$out`"", '--english') -Wait -PassThru -NoNewWindow
+          Write-Host "generate exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "generate failed with exit code $($p.ExitCode)" }
+          if (-not (Test-Path "$out/content/codebayin.bundle")) { throw "codebayin.bundle missing" }
+
+          $p = Start-Process -FilePath $exe -ArgumentList @('verify', "`"$out/content/codebayin.bundle`"") -Wait -PassThru -NoNewWindow
+          Write-Host "verify exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "verify failed with exit code $($p.ExitCode)" }
           if (-not (Test-Path "$out/content/metadata.store")) { throw "metadata.store missing" }
+          Write-Host "Smoke test passed."
 
       - name: Publish single file
         run: dotnet publish src/Witcher3FontTool -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
