@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.2.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>Witcher3FontTool</AssemblyName>
+    <RootNamespace>Witcher3FontTool</RootNamespace>
+    <Product>Witcher 3 Font Tool</Product>
+    <Description>Unofficial font replacement mod generator for The Witcher 3 (next-gen).</Description>
+    <Authors>jakeouyang</Authors>
+    <RepositoryUrl>https://github.com/jakeouyang/Witcher3FontTool</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/*" />
+  </ItemGroup>
+
+</Project>
