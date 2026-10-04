@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <Version>1.2.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources/app.ico</ApplicationIcon>
     <AssemblyName>Witcher3FontTool</AssemblyName>
     <RootNamespace>Witcher3FontTool</RootNamespace>
     <Product>Witcher 3 Font Tool</Product>
@@ -17,6 +18,14 @@
     <RepositoryUrl>https://github.com/jakeouyang/Witcher3FontTool</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Release builds default to a self-contained single-file exe -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>

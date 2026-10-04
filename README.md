@@ -54,7 +54,9 @@ Witcher3FontTool.exe render   <bundle 或 swf> <文本>
 
 ```powershell
 dotnet build -c Release
-dotnet publish src/Witcher3FontTool -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+# Release 构建默认输出自包含单文件 exe：
+# src/Witcher3FontTool/bin/Release/net8.0-windows/win-x64/Witcher3FontTool.exe
+dotnet publish src/Witcher3FontTool -c Release -o publish   # 发布到独立目录
 ```
 
 推送标签 `v*` 时 CI 会自动构建并发布单文件 exe 到 GitHub Releases。
@@ -112,7 +114,9 @@ Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) on W
 
 ```powershell
 dotnet build -c Release
-dotnet publish src/Witcher3FontTool -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+# Release builds output a self-contained single-file exe at:
+# src/Witcher3FontTool/bin/Release/net8.0-windows/win-x64/Witcher3FontTool.exe
+dotnet publish src/Witcher3FontTool -c Release -o publish   # publish to a folder
 ```
 
 Pushing a `v*` tag makes CI build and attach the exe to a GitHub Release.

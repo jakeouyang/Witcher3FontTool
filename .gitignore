@@ -32,3 +32,6 @@ Thumbs.db
 .DS_Store
 
 smoke/
+
+publish/
+ui-check.png

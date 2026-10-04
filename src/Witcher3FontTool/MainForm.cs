@@ -31,7 +31,8 @@ public sealed class MainForm : Form
         Font = new Font("Microsoft YaHei UI", 10.5f);
         ClientSize = new Size(940, 700); MinimumSize = new Size(940, 640); StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.None;
-        // Window icon intentionally left default in the open-source build.
+        using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("Witcher3FontTool.Resources.app.ico")!)
+            Icon = new Icon(iconStream);
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(28, 12, 28, 12), ColumnCount = 1, RowCount = 10 };
         foreach (int h in new[] { 52, 38, 48, 48, 44, 42, 48, 8 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, h));
@@ -45,9 +46,12 @@ public sealed class MainForm : Form
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42)); header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
         var titleArea = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = Padding.Empty };
         titleArea.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44)); titleArea.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        using var titleIcon = new Icon(Icon, 32, 32);
+        var titleImage = new PictureBox { Image = titleIcon.ToBitmap(), Size = new Size(32, 32), SizeMode = PictureBoxSizeMode.Zoom, Anchor = AnchorStyles.Left, Margin = Padding.Empty };
+        titleImage.Disposed += (_, _) => titleImage.Image?.Dispose();
         var title = new Label { Text = "WITCHER 3 Font Tool", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 18), Margin = Padding.Empty };
-        title.MouseDown += DragWindow;
-        titleArea.Controls.Add(title, 1, 0); header.Controls.Add(titleArea, 0, 0);
+        title.MouseDown += DragWindow; titleImage.MouseDown += DragWindow;
+        titleArea.Controls.Add(titleImage, 0, 0); titleArea.Controls.Add(title, 1, 0); header.Controls.Add(titleArea, 0, 0);
         language = Button("", () => SelectInterfaceLanguage(!Chinese));
         language.Dock = DockStyle.Fill; language.Margin = Padding.Empty;
         header.Controls.Add(language, 1, 0);
