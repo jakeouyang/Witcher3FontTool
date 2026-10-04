@@ -11,6 +11,12 @@ internal static class SelfTest
             throw new Exception("Selected language character sets failed validation");
         root = Path.GetFullPath(root);
         if (Directory.Exists(root)) throw new IOException("Test directory must be new");
+        string preferenceFile = Path.Combine(root, "preferences", "settings.json");
+        UserPreferences.SaveToPath(preferenceFile, "C:\\Games\\The Witcher 3", "C:\\Fonts\\example.ttf", FontCoverage.TraditionalChinese | FontCoverage.English, chineseInterface: true);
+        var savedPreferences = UserPreferences.LoadFromPath(preferenceFile);
+        if (savedPreferences.GamePath != "C:\\Games\\The Witcher 3" || savedPreferences.FontPath != "C:\\Fonts\\example.ttf" ||
+            savedPreferences.Coverage != (FontCoverage.TraditionalChinese | FontCoverage.English) || !savedPreferences.ChineseInterface)
+            throw new Exception("Preference persistence failed.");
         Directory.CreateDirectory(Path.Combine(root, "bin", "x64"));
         File.WriteAllText(Path.Combine(root, "bin", "x64", "witcher3.exe"), "test");
         Directory.CreateDirectory(Path.Combine(root, "content", "content0", "bundles"));

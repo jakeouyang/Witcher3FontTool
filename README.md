@@ -23,6 +23,7 @@
 ### 特性
 
 - **GUI / CLI 双模式**：无参数启动图形界面；完整功能亦可通过命令行使用
+- **记住上次选择**：本机保存游戏目录、字体路径、语言勾选状态与中英文界面，下次启动自动恢复；设置仅保存在 `%LocalAppData%\Witcher3FontTool\settings.json`，不会写入游戏目录
 - **多语言字体槽位**：简体（fonts_cn，2 槽位）、繁体（fonts_zh，2 槽位）、英文（fonts_en，3 槽位），可任意组合勾选
 - **字形覆盖智能裁剪**：按 GB2312 / Big5 / ASCII / Latin-1 + 游戏原字符集取并集，缺字自动报告且不会生成空白字形
 - **一键安装 / 还原**：自动创建 `Mods` 目录；仅管理本工具生成的 MOD（SHA256 清单校验），还原时绝不触碰其他 MOD
@@ -100,6 +101,7 @@ See [screenshots](#截图) above.
 ### Features
 
 - **GUI and CLI** in one binary
+- Remembers the last game folder, font file, selected replacement languages, and interface language for the next launch; preferences remain local to `%LocalAppData%\Witcher3FontTool\settings.json`, never in the game folder
 - Per-language font slots: Simplified Chinese (fonts_cn, 2 slots), Traditional Chinese
   (fonts_zh, 2 slots), English (fonts_en, 3 slots)
 - Glyph coverage management against GB2312 / Big5 / ASCII / Latin-1 plus the game's original

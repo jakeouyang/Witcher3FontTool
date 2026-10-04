@@ -28,7 +28,7 @@ internal static class Program
                 case ["--render-ui", var output, .. var options]:
                     using (var form = new MainForm())
                     {
-                        form.SelectInterfaceLanguage(options.Contains("--zh"));
+                        form.SelectInterfaceLanguage(options.Contains("--zh"), save: false);
                         form.Show(); Application.DoEvents();
                         using var bitmap = new Bitmap(form.Width, form.Height);
                         form.DrawToBitmap(bitmap, form.ClientRectangle); bitmap.Save(output);

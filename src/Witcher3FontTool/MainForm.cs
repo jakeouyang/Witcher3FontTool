@@ -17,6 +17,7 @@ public sealed class MainForm : Form
     bool busy;
     bool interactionStarted;
     bool Chinese;
+    bool loadingPreferences;
     FontCoverage Coverage => (simplified.Checked ? FontCoverage.SimplifiedChinese : 0) |
                              (traditional.Checked ? FontCoverage.TraditionalChinese : 0) |
                              (english.Checked ? FontCoverage.English : 0);
@@ -89,13 +90,44 @@ public sealed class MainForm : Form
         var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = Padding.Empty };
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
         status.Text = "Ready";
-        footer.Controls.Add(status); footer.Controls.Add(new Label { Text = "v1.2", Dock = DockStyle.Fill, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9) }); layout.Controls.Add(footer, 0, 9);
+        footer.Controls.Add(status); footer.Controls.Add(new Label { Text = "v1.2.1", Dock = DockStyle.Fill, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9) }); layout.Controls.Add(footer, 0, 9);
 
         busyControls.AddRange(new Control[] { game, font });
-        string defaultGame = @"C:\Program Files (x86)\Steam\steamapps\common\The Witcher 3";
-        if (BundleWriter.ValidateGameDir(defaultGame) == null) game.Text = defaultGame;
+        LoadPreferences();
+        game.TextChanged += (_, _) => SavePreferences();
+        font.TextChanged += (_, _) => SavePreferences();
+        simplified.CheckedChanged += (_, _) => SavePreferences();
+        traditional.CheckedChanged += (_, _) => SavePreferences();
+        english.CheckedChanged += (_, _) => SavePreferences();
         ApplyLanguage();
         FormClosing += (_, e) => { if (busy) { e.Cancel = true; status.Text = T("Working…", "正在处理…"); } };
+    }
+
+    void LoadPreferences()
+    {
+        loadingPreferences = true;
+        try
+        {
+            var preferences = UserPreferences.Load();
+            game.Text = preferences.GamePath ?? string.Empty;
+            font.Text = preferences.FontPath ?? string.Empty;
+            Chinese = preferences.ChineseInterface;
+            simplified.Checked = (preferences.Coverage & FontCoverage.SimplifiedChinese) != 0;
+            traditional.Checked = (preferences.Coverage & FontCoverage.TraditionalChinese) != 0;
+            english.Checked = (preferences.Coverage & FontCoverage.English) != 0;
+
+            if (string.IsNullOrWhiteSpace(game.Text))
+            {
+                string defaultGame = @"C:\Program Files (x86)\Steam\steamapps\common\The Witcher 3";
+                if (BundleWriter.ValidateGameDir(defaultGame) == null) game.Text = defaultGame;
+            }
+        }
+        finally { loadingPreferences = false; }
+    }
+
+    void SavePreferences()
+    {
+        if (!loadingPreferences) UserPreferences.Save(game.Text, font.Text, Coverage, Chinese);
     }
 
     void DragWindow(object? sender, MouseEventArgs e)
@@ -138,7 +170,12 @@ public sealed class MainForm : Form
         busyControls.AddRange(new Control[] { box, browse }); return row;
     }
     string T(string english, string chinese) => Chinese ? chinese : english;
-    internal void SelectInterfaceLanguage(bool chinese) { Chinese = chinese; ApplyLanguage(); }
+    internal void SelectInterfaceLanguage(bool chinese, bool save = true)
+    {
+        Chinese = chinese;
+        ApplyLanguage();
+        if (save) SavePreferences();
+    }
     void ApplyLanguage()
     {
         language.Text = T("中文", "English");

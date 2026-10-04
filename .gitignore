@@ -34,4 +34,7 @@ Thumbs.db
 smoke/
 
 publish/
+publish-*/
 ui-check.png
+ui-check-*.png
+smoke-persistence*/
