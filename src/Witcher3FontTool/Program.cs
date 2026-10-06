@@ -20,6 +20,7 @@ internal static class Program
                     if (BundleWriter.ValidateGameDir(game) is { } error) throw new InvalidDataException(error);
                     Console.WriteLine("VALID"); break;
                 case ["verify", var input]: Verify(input); break;
+                case ["layout", var input]: Layout(input); break;
                 case ["render", var input, var text]:
                     var tag = new TemplateSwf(FontService.ReadSwf(input)).Tags.First(t => t.Code == 75);
                     foreach (var pair in SwfShapeDecoder.Decode(tag.Data, text.Select(c => (uint)c)))
@@ -35,7 +36,7 @@ internal static class Program
                     }
                     break;
                 case ["--self-test", var output]: SelfTest.Run(output); break;
-                default: throw new ArgumentException("Commands: install <game> <font> [--zh-hans] [--zh-hant] [--english] | restore <game> | generate <font> <new-directory> [--zh-hans] [--zh-hant] [--english] | verify <bundle/swf> | render <bundle/swf> <text> | validate-game <game>");
+                default: throw new ArgumentException("Commands: install <game> <font> [--zh-hans] [--zh-hant] [--english] | restore <game> | generate <font> <new-directory> [--zh-hans] [--zh-hant] [--english] | verify <bundle/swf> | layout <bundle/swf> | render <bundle/swf> <text> | validate-game <game>");
             }
             return 0;
         }
@@ -70,6 +71,18 @@ internal static class Program
                 SwfShapeDecoder.DecodeShape(data, table + begin, end - begin);
             }
             Console.WriteLine($"PASS: {library.Path} / font {BitConverter.ToUInt16(data)} / {n} glyphs");
+        }
+    }
+    /// <summary>Prints the layout (ascent/descent/leading) of every font slot, in twips and em.</summary>
+    internal static void Layout(string path)
+    {
+        foreach (var library in FontService.ReadFontLibraries(path))
+        foreach (var tag in new TemplateSwf(library.Swf).Tags.Where(t => t.Code == 75))
+        {
+            var metrics = DefineFont3Builder.ReadLayout(tag.Data);
+            Console.WriteLine($"{library.Path} / font {BitConverter.ToUInt16(tag.Data, 0)}: " +
+                $"ascent={metrics.Ascent} descent={metrics.Descent} leading={metrics.Leading} twips " +
+                $"({metrics.AscentEm:F4} / {metrics.DescentEm:F4} / {metrics.LeadingEm:F4} em)");
         }
     }
 }

@@ -98,12 +98,14 @@ public static class FontService
             {
                 ushort id = BitConverter.ToUInt16(original);
                 // Preserve all family registrations and bold/italic identities, replacing every slot.
+                // The slot keeps the original library's layout so text stays where the UI put it.
                 var tag = DefineFont3Builder.Build(font, new DefineFont3Builder.Options
                 {
                     FontId = id,
                     FontName = Encoding.UTF8.GetString(original, 5, original[4]),
                     LanguageCode = original[3],
-                    TwipsPerUnit = DefineFont3Builder.PickScale(font)
+                    TwipsPerUnit = DefineFont3Builder.PickScale(font),
+                    Layout = FontLayout.For(language, id)
                 }, codes, out var stats);
                 tag[2] = (byte)((tag[2] & ~3) | (original[2] & 3));
                 int table = 7 + tag[4];

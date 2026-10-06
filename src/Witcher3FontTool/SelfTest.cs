@@ -32,10 +32,18 @@ internal static class SelfTest
         {
             var tags = new TemplateSwf(library.Swf).Tags.Where(t => t.Code == 75).ToArray();
             if (tags.Length != (library.Path.Contains("fonts_en") ? 3 : 2)) throw new Exception("Missing font slots.");
+            string language = library.Path.Contains("fonts_en") ? "en" : library.Path.Contains("fonts_zh") ? "zh" : "cn";
             foreach (var tag in tags)
             {
                 var outlines = SwfShapeDecoder.Decode(tag.Data, new uint[] { 'W', '3' });
                 if (outlines.Count != 2) throw new Exception("A font slot lacks supported English characters.");
+                // The slot must keep the original library's layout, otherwise all in-game text
+                // moves up or down (see FontLayout).
+                var expected = FontLayout.For(language, BitConverter.ToUInt16(tag.Data, 0))
+                    ?? throw new Exception("No original layout known for a generated font slot.");
+                var actual = DefineFont3Builder.ReadLayout(tag.Data);
+                if (actual != expected)
+                    throw new Exception($"Font slot {language}/{BitConverter.ToUInt16(tag.Data, 0)} has layout {actual}, expected {expected}.");
             }
         }
         string other = Path.Combine(root, "Mods", "modOther", "keep.txt");
