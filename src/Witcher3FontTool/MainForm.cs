@@ -90,7 +90,9 @@ public sealed class MainForm : Form
         var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = Padding.Empty };
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
         status.Text = "Ready";
-        footer.Controls.Add(status); footer.Controls.Add(new Label { Text = "v1.2.1", Dock = DockStyle.Fill, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9) }); layout.Controls.Add(footer, 0, 9);
+        var appVersion = typeof(MainForm).Assembly.GetName().Version!;
+        var versionLabel = new Label { Text = $"v{appVersion.Major}.{appVersion.Minor}.{appVersion.Build}", Dock = DockStyle.Fill, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9) };
+        footer.Controls.Add(status); footer.Controls.Add(versionLabel); layout.Controls.Add(footer, 0, 9);
 
         busyControls.AddRange(new Control[] { game, font });
         LoadPreferences();
