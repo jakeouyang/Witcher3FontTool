@@ -23,8 +23,13 @@ jobs:
 
       # Release configuration builds a self-contained single-file exe
       # (RuntimeIdentifier/SelfContained/PublishSingleFile are set in the .csproj).
+      # Building a v* tag overrides the version automatically: v1.4.0 -> 1.4.0.
       - name: Publish single file
-        run: dotnet publish src/Witcher3FontTool -c Release -o publish
+        shell: pwsh
+        run: |
+          $args = @('publish', 'src/Witcher3FontTool', '-c', 'Release', '-o', 'publish')
+          if ($env:GITHUB_REF_NAME -like 'v*') { $args += "/p:Version=$($env:GITHUB_REF_NAME.Substring(1))" }
+          dotnet @args
 
       - name: Smoke test (generate + verify with a system font)
         shell: pwsh

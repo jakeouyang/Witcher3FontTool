@@ -7,7 +7,8 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.3.1</Version>
+    <!-- Local/dev fallback version. Tagged CI builds override this with -p:Version=<tag>. -->
+    <VersionPrefix>1.3.1</VersionPrefix>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources/app.ico</ApplicationIcon>
     <AssemblyName>Witcher3FontTool</AssemblyName>
