@@ -57,3 +57,37 @@ codeTableOffset / glyph shapes / codes / layout / kerning）：
 - ⚠️ 字形位流中的样式记录：本游戏（Scaleform GFx）的字体字形在 F0/F1 选择标志后
   【不写】UB[NumFillBits] 填充值位，MoveBits 紧跟其后 —— 与公开 SWF 规范不同，
   按规范写会导致游戏内全部字形渲染为缺字框。实现见 `SwfShapeWriter.EncodeGlyphShape`。
+
+## layout 段（ascent / descent / leading）
+
+layout 段位于 codeTable 之后：
+
+```
+s16 FontAscent / s16 FontDescent / s16 FontLeading   （twips，20480 twips/em）
+s16 FontAdvanceTable[numGlyphs]
+RECT FontBoundsTable[numGlyphs]
+u16 KerningCount
+```
+
+GFx 用这三个数排版：**首行基线 = 文本框 top + FontAscent**，行盒高度 =
+ascent + descent + leading。游戏 UI 的文本框坐标是照着原版字库的这组数值摆放的，
+所以**本工具必须沿用原版数值，不能用替换字体的字体度量**：例如替换字体是微软雅黑
+（usWin 行盒 1.32 em）或思源黑体（1.45 em）时，ascent 比原版大 0.16–0.28 em，
+所有 UI 文字（菜单、字幕、HUD、任务提示）会整体下移 4–8 px，也就是"字下沉"。
+
+原版各槽位的数值（取自 `content\content0\bundles\r4gui.bundle` 中的
+`gameplay\gui_new\swf\witcher3\fonts_{cn,zh,en}.redswf`，本仓库只记录数字，不含任何
+游戏数据），见 `src/Witcher3FontTool/FontLayout.cs`：
+
+| 字库 | FontID | 原版字体 | ascent | descent | leading |
+|------|--------|----------|--------|---------|---------|
+| fonts_cn | 1 | 文鼎UD晶熙黑体G30_D | 20245 | 4501 | 853 |
+| fonts_cn | 5 | PFDinTextCondPro-Regular | 18091 | 4245 | 853 |
+| fonts_zh | 1 | Noto Sans TC Regular | 17408 | 3072 | 853 |
+| fonts_zh | 5 | PFDINTextCondPro-Regular | 19157 | 5205 | 853 |
+| fonts_en | 1 / 3 / 5 | PF Din Text Cond Pro | 18100 / 18440 / 18900 | 4240 / 4240 / 4400 | 1860 / 2200 / 2820 |
+
+注意原版 `.redswf` 是 **CR2W（`CSwfResource`）**，里面再套一层 zlib 压缩的 SWF
+数据（CR2W 偏移处的 tag + u32 长度 + zlib 流）；MOD 里放裸 SWF 即可，游戏同样接受。
+原版 bundle 的文件槽是 304 字节（MOD 用 320 字节），且数据经 zlib 压缩，
+因此本工具的内嵌骨架是从原版资源中剥离字形后的结构，而非直接读取游戏文件。

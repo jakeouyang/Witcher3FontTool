@@ -85,11 +85,29 @@ public static class DefineFont3Builder
         public string FontName { get; init; } = "文鼎UD晶熙黑体G30_D";
         public byte LanguageCode { get; init; } = 4; // Simplified Chinese
         public double TwipsPerUnit { get; init; } = 10;
+
+        /// <summary>
+        /// Layout of the font slot in the game's original font library. When set, these values
+        /// are written verbatim instead of deriving the metrics from the replacement font —
+        /// see <see cref="FontLayout"/> for why that matters.
+        /// </summary>
+        public FontLayout.Metrics? Layout { get; init; }
     }
 
     public static double PickScale(IOutlineFont font)
     {
         return 20480.0 / font.UnitsPerEm;
+    }
+
+    /// <summary>Reads the layout block (ascent / descent / leading, in twips) of a DefineFont3 tag.</summary>
+    public static FontLayout.Metrics ReadLayout(byte[] tag)
+    {
+        int numGlyphs = BitConverter.ToUInt16(tag, 5 + tag[4]);
+        int table = 7 + tag[4];
+        int codeTableOffset = checked((int)BitConverter.ToUInt32(tag, table + numGlyphs * 4));
+        int at = table + codeTableOffset + numGlyphs * 2;
+        return new FontLayout.Metrics(
+            BitConverter.ToInt16(tag, at), BitConverter.ToInt16(tag, at + 2), BitConverter.ToInt16(tag, at + 4));
     }
 
     public readonly record struct BuildStats(int Glyphs, int TagLength, short AscentTwips, short DescentTwips);
@@ -144,10 +162,17 @@ public static class DefineFont3Builder
         for (int i = 0; i < n; i++) bw.Write(shapes[i]);
         for (int i = 0; i < n; i++) bw.Write((ushort)codePoints[i]);
 
-        // layout section
-        bw.Write(Metric(font.Ascender * s));
-        bw.Write(Metric(-font.Descender * s));
-        bw.Write(Metric(font.LineGap * s));
+        // layout section.
+        // Scaleform GFx places the first baseline of a text field at (top + ascent), and sizes
+        // the line box from ascent/descent/leading. Those three numbers therefore have to stay
+        // the ones the game's UI was laid out against; taking them from the replacement font
+        // shifts every piece of text on screen (see FontLayout).
+        short ascent = opt.Layout?.Ascent ?? Metric(font.Ascender * s);
+        short descent = opt.Layout?.Descent ?? Metric(-font.Descender * s);
+        short leading = opt.Layout?.Leading ?? Metric(font.LineGap * s);
+        bw.Write(ascent);
+        bw.Write(descent);
+        bw.Write(leading);
         for (int i = 0; i < n; i++) bw.Write(advances[i]);
         for (int i = 0; i < n; i++)
         {
@@ -164,9 +189,7 @@ public static class DefineFont3Builder
         }
         bw.Write((ushort)0); // kerning count
 
-        stats = new BuildStats(n, (int)body.Length,
-            Metric(font.Ascender * s),
-            Metric(-font.Descender * s));
+        stats = new BuildStats(n, (int)body.Length, ascent, descent);
         return body.ToArray();
     }
 
