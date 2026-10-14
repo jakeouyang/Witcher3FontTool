@@ -13,9 +13,17 @@ internal static class Program
         {
             switch (args)
             {
-                case ["install", var game, var font, .. var options]: FontService.Install(game, font, Console.WriteLine, ParseCoverage(options)); break;
+                case ["install", var game, var font, .. var options]:
+                {
+                    var config = ParseOptions(options);
+                    FontService.Install(game, font, Console.WriteLine, config.Coverage, latinFontPath: config.LatinFont); break;
+                }
                 case ["restore", var game]: FontService.Restore(game, Console.WriteLine); break;
-                case ["generate", var font, var output, .. var options]: FontService.Generate(font, output, Console.WriteLine, ParseCoverage(options)); break;
+                case ["generate", var font, var output, .. var options]:
+                {
+                    var config = ParseOptions(options);
+                    FontService.Generate(font, output, Console.WriteLine, config.Coverage, latinFontPath: config.LatinFont); break;
+                }
                 case ["validate-game", var game]:
                     if (BundleWriter.ValidateGameDir(game) is { } error) throw new InvalidDataException(error);
                     Console.WriteLine("VALID"); break;
@@ -36,26 +44,37 @@ internal static class Program
                     }
                     break;
                 case ["--self-test", var output]: SelfTest.Run(output); break;
-                default: throw new ArgumentException("Commands: install <game> <font> [--zh-hans] [--zh-hant] [--english] | restore <game> | generate <font> <new-directory> [--zh-hans] [--zh-hant] [--english] | verify <bundle/swf> | layout <bundle/swf> | render <bundle/swf> <text> | validate-game <game>");
+                case ["--feature-test", var output]: FeatureTest.Run(output); break;
+                default: throw new ArgumentException("Commands: install <game> <font> [--zh-hans] [--zh-hant] [--english] [--russian] [--ukrainian] [--latin-font <font>] | restore <game> | generate <font> <new-directory> [same options] | verify <bundle/swf> | layout <bundle/swf> | render <bundle/swf> <text> | validate-game <game>");
             }
             return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex.ToString()); return 1; }
     }
-    static FontCoverage ParseCoverage(string[] options)
+    static (FontCoverage Coverage, string? LatinFont) ParseOptions(string[] options)
     {
-        if (options.Length == 0) return FontCoverage.SimplifiedChinese | FontCoverage.English;
         FontCoverage coverage = 0;
-        foreach (var option in options)
+        string? latin = null;
+        for (int i = 0; i < options.Length; i++)
+        {
+            var option = options[i];
+            if (option == "--latin-font")
+            {
+                if (latin != null || ++i >= options.Length || string.IsNullOrWhiteSpace(options[i]) || options[i].StartsWith("--"))
+                    throw new ArgumentException("Specify exactly one font path after --latin-font.");
+                latin = options[i]; continue;
+            }
             coverage |= option switch
             {
                 "--zh-hans" => FontCoverage.SimplifiedChinese,
                 "--zh-hant" => FontCoverage.TraditionalChinese,
                 "--english" => FontCoverage.English,
+                "--russian" => FontCoverage.Russian,
+                "--ukrainian" => FontCoverage.Ukrainian,
                 _ => throw new ArgumentException("Unknown character-set option: " + option)
             };
-        if (coverage == 0) throw new ArgumentException("Select at least one character set.");
-        return coverage;
+        }
+        return (coverage == 0 ? FontCoverage.SimplifiedChinese | FontCoverage.English : coverage, latin);
     }
     internal static void Verify(string path)
     {

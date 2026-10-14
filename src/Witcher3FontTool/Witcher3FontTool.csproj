@@ -8,7 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Local/dev fallback version. Tagged CI builds override this with -p:Version=<tag>. -->
-    <VersionPrefix>1.3.1</VersionPrefix>
+    <VersionPrefix>1.4.0</VersionPrefix>
+    <VersionSuffix>beta.1</VersionSuffix>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources/app.ico</ApplicationIcon>
     <AssemblyName>Witcher3FontTool</AssemblyName>

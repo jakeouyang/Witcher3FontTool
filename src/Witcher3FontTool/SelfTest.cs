@@ -22,17 +22,18 @@ internal static class SelfTest
         Directory.CreateDirectory(Path.Combine(root, "content", "content0", "bundles"));
         File.WriteAllText(Path.Combine(root, "content", "content0", "bundles", "r4gui.bundle"), "test");
         string font = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "simhei.ttf");
-        Task.Run(() => FontService.Install(root, font, Console.WriteLine, (FontCoverage)7)).GetAwaiter().GetResult();
+        string latinFont = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
+        Task.Run(() => FontService.Install(root, font, Console.WriteLine, FontCharacterSets.All, latinFontPath: latinFont)).GetAwaiter().GetResult();
         var bundle = Path.Combine(root, "Mods", FontService.ModName, "content", "codebayin.bundle");
         Program.Verify(bundle);
         var libraries = FontService.ReadFontLibraries(bundle).ToArray();
-        if (libraries.Length != 3 || !libraries.Select(l => l.Path.Split('\\')[^1]).Order().SequenceEqual(new[] { "fonts_cn.redswf", "fonts_en.redswf", "fonts_zh.redswf" }))
+        if (libraries.Length != 5 || !libraries.Select(l => l.Path.Split('\\')[^1]).Order().SequenceEqual(new[] { "fonts_cn.redswf", "fonts_en.redswf", "fonts_ru.redswf", "fonts_ua.redswf", "fonts_zh.redswf" }))
             throw new Exception("Missing selected language library.");
         foreach (var library in libraries)
         {
             var tags = new TemplateSwf(library.Swf).Tags.Where(t => t.Code == 75).ToArray();
-            if (tags.Length != (library.Path.Contains("fonts_en") ? 3 : 2)) throw new Exception("Missing font slots.");
-            string language = library.Path.Contains("fonts_en") ? "en" : library.Path.Contains("fonts_zh") ? "zh" : "cn";
+            string language = library.Path.Split('\\')[^1][6..8];
+            if (tags.Length != (language is "cn" or "zh" ? 2 : 3)) throw new Exception("Missing font slots.");
             foreach (var tag in tags)
             {
                 var outlines = SwfShapeDecoder.Decode(tag.Data, new uint[] { 'W', '3' });
@@ -48,7 +49,7 @@ internal static class SelfTest
         }
         string other = Path.Combine(root, "Mods", "modOther", "keep.txt");
         Directory.CreateDirectory(Path.GetDirectoryName(other)!); File.WriteAllText(other, "untouched");
-        FontService.Install(root, font, Console.WriteLine, (FontCoverage)7);
+        FontService.Install(root, font, Console.WriteLine, FontCharacterSets.All, latinFontPath: latinFont);
         string extra = Path.Combine(root, "Mods", FontService.ModName, "extra.txt");
         File.WriteAllText(extra, "external");
         ExpectFailure(() => FontService.Restore(root, Console.WriteLine));
@@ -64,7 +65,7 @@ internal static class SelfTest
         string conflict = Path.Combine(root, "Mods", "modConflict", "content");
         Directory.CreateDirectory(conflict);
         File.WriteAllBytes(Path.Combine(conflict, "font.bundle"), validBundle);
-        ExpectFailure(() => FontService.Install(root, font, Console.WriteLine, (FontCoverage)7));
+        ExpectFailure(() => FontService.Install(root, font, Console.WriteLine, FontCharacterSets.All, latinFontPath: latinFont));
         if (!File.ReadAllBytes(Path.Combine(conflict, "font.bundle")).SequenceEqual(validBundle)) throw new Exception("Conflict changed");
         string target = Path.Combine(root, "Mods", FontService.ModName);
         Directory.CreateDirectory(target); File.WriteAllText(Path.Combine(target, "foreign.txt"), "keep");

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, codex/font-composition-cyrillic-beta ]
     tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
@@ -28,8 +28,9 @@ jobs:
         shell: pwsh
         run: |
           $args = @('publish', 'src/Witcher3FontTool', '-c', 'Release', '-o', 'publish')
-          if ($env:GITHUB_REF_NAME -like 'v*') { $args += "/p:Version=$($env:GITHUB_REF_NAME.Substring(1))" }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -like 'v*') { $args += "/p:Version=$($env:GITHUB_REF_NAME.Substring(1))" }
           dotnet @args
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
 
       - name: Smoke test (generate + verify with a system font)
         shell: pwsh
@@ -62,9 +63,26 @@ jobs:
           name: Witcher3FontTool-${{ github.sha }}
           path: publish/Witcher3FontTool.exe
 
+      - name: Test mixed glyph sources and Cyrillic libraries
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $testRoot = Join-Path $env:RUNNER_TEMP ("Witcher3FontTool-features-" + [guid]::NewGuid().ToString('N'))
+          try {
+            $exe = Join-Path $env:GITHUB_WORKSPACE "publish/Witcher3FontTool.exe"
+            $p = Start-Process -FilePath $exe -ArgumentList @('--feature-test', "`"$testRoot`"") -WindowStyle Hidden -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or -not (Test-Path (Join-Path $testRoot 'PASS.txt'))) { throw "Font composition/Cyrillic tests failed" }
+            Get-Content (Join-Path $testRoot 'PASS.txt')
+          } finally {
+            if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }
+          }
+
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: publish/Witcher3FontTool.exe
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}
+          body_path: ${{ contains(github.ref_name, '-beta.') && 'docs/testing-release.md' || '' }}

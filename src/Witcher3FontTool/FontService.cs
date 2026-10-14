@@ -61,31 +61,52 @@ public static class FontService
         return bytes[..size];
     }
     public static void Generate(string fontPath, string output, Action<string> report,
-        FontCoverage coverage = FontCoverage.SimplifiedChinese | FontCoverage.English, bool chinese = false)
+        FontCoverage coverage = FontCoverage.SimplifiedChinese | FontCoverage.English, bool chinese = false, string? latinFontPath = null)
     {
         if (Directory.Exists(output) || File.Exists(output)) throw new IOException(chinese ? "输出目录已存在，请选择新目录。" : "Output directory already exists; choose a new directory.");
         report(chinese ? "正在读取并验证字体…" : "Reading and validating font…");
-        OutlineFont font;
-        try { font = new OutlineFont(fontPath); }
+        OutlineFont primary;
+        OutlineFont? latin = null;
+        try
+        {
+            primary = new OutlineFont(fontPath);
+            if (!string.IsNullOrWhiteSpace(latinFontPath)) latin = new OutlineFont(latinFontPath);
+        }
         catch (Exception ex) when (ex is ArgumentException or InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
         {
             throw new InvalidDataException(chinese
                 ? $"无法解析此字体文件。它可能已损坏、不受支持，或缺少 TrueType/CFF 轮廓数据。详细信息：{ex.Message}"
                 : $"Could not parse this font file. It may be damaged, unsupported, or lack TrueType/CFF outlines. Details: {ex.Message}", ex);
         }
+        var font = new CompositeFont(primary, latin);
+        report(chinese ? $"主字体：{primary.Family}" : $"Primary font: {primary.Family}");
+        if (latin != null) report(chinese ? $"英文与数字字体：{latin.Family}；缺字时尝试另一字体。" : $"Latin letters and numbers: {latin.Family}; missing characters fall back to the other font.");
         // Validate the selection before creating any output.
         _ = FontCharacterSets.Create(coverage);
         var resources = new List<BundleWriter.ResourceEntry>();
-        foreach (var (selection, language) in new[] {
-            (FontCoverage.SimplifiedChinese, "cn"), (FontCoverage.TraditionalChinese, "zh"), (FontCoverage.English, "en") })
+        foreach (var (selection, language) in FontCharacterSets.Languages)
         {
             if ((coverage & selection) == 0) continue;
             var requested = new SortedSet<uint>(FontCharacterSets.Create(selection | FontCoverage.English));
             requested.UnionWith(Encoding.UTF8.GetString(Resource($"charset-game-{language}.txt")).EnumerateRunes().Select(r => (uint)r.Value));
             var codes = requested.Where(c => font.GlyphIndex(c) != 0).ToList();
-            if (codes.Count == 0 || (language != "en" && !codes.Any(c => c >= 0x3400 && c <= 0x9FFF)))
+            if (codes.Count == 0 || (language is "cn" or "zh" && !codes.Any(c => c >= 0x3400 && c <= 0x9FFF)))
                 throw new InvalidDataException($"{FontCharacterSets.Describe(selection, chinese)}: " + (chinese ? "所选字体没有该语言的字形。" : "The selected font has no glyphs for this language."));
-            report($"{FontCharacterSets.Describe(selection, chinese)} — {font.Family}: {codes.Count:N0}/{requested.Count:N0}");
+            if (language is "ru" or "ua")
+            {
+                var requiredMissing = FontCharacterSets.Create(selection).Where(c => font.GlyphIndex(c) == 0).ToArray();
+                if (requiredMissing.Length > 0)
+                    throw new InvalidDataException(FontCharacterSets.Describe(selection, chinese) + ": " +
+                        (chinese ? "字体缺少必需字母：" : "The font lacks required letters: ") +
+                        string.Concat(requiredMissing.Select(c => char.ConvertFromUtf32((int)c))));
+            }
+            report($"{FontCharacterSets.Describe(selection, chinese)}: {codes.Count:N0}/{requested.Count:N0}");
+            if (latin != null)
+            {
+                int fromLatin = codes.Count(font.UsesLatinFont), fallback = codes.Count(font.UsesFallback);
+                report(chinese ? $"字形来源：主字体 {codes.Count - fromLatin:N0}，英文与数字字体 {fromLatin:N0}；回退 {fallback:N0} 个字符。"
+                    : $"Glyph sources: primary {codes.Count - fromLatin:N0}, Latin {fromLatin:N0}; {fallback:N0} fallback characters.");
+            }
             var missing = requested.Except(codes).ToArray();
             if (missing.Length > 0)
             {
@@ -168,7 +189,7 @@ public static class FontService
             {
                 using var stream = File.OpenRead(file);
                 var header = new byte[Math.Min(65536, stream.Length)]; stream.ReadExactly(header);
-                if (new[] { (FontCoverage.SimplifiedChinese, "cn"), (FontCoverage.TraditionalChinese, "zh"), (FontCoverage.English, "en") }
+                if (FontCharacterSets.Languages
                     .Any(e => (coverage & e.Item1) != 0 && Encoding.ASCII.GetString(header).Contains($"fonts_{e.Item2}.redswf", StringComparison.OrdinalIgnoreCase)))
                     throw new IOException($"发现与所选语言冲突的字体 MOD：{Path.GetFileName(dir)}。请先将它移出 Mods，再生成；本工具不会改动它。");
             }
@@ -190,7 +211,7 @@ public static class FontService
         catch (IOException ex) { throw new IOException("此游戏目录正在被另一工具实例操作，或目录不可写。", ex); }
     }
     public static void Install(string game, string font, Action<string> report,
-        FontCoverage coverage = FontCoverage.SimplifiedChinese | FontCoverage.English, bool chinese = false)
+        FontCoverage coverage = FontCoverage.SimplifiedChinese | FontCoverage.English, bool chinese = false, string? latinFontPath = null)
     {
         game = Path.GetFullPath(game); Validate(game);
         using var operation = LockGame(game);
@@ -198,7 +219,7 @@ public static class FontService
         CheckConflicts(mods, coverage);
         if (Directory.Exists(target)) CheckOwned(target);
         var work = Path.Combine(game, ".W3FontTool", "build-" + Guid.NewGuid().ToString("N"));
-        Generate(font, work, report, coverage, chinese);
+        Generate(font, work, report, coverage, chinese, latinFontPath);
         Validate(game); CheckConflicts(mods, coverage);
         Directory.CreateDirectory(mods);
         string? backup = null;
