@@ -5,10 +5,13 @@ namespace Witcher3FontTool;
 /// <summary>Small, local UI state store. It contains paths and selection state only.</summary>
 internal sealed class UserPreferences
 {
-    const string FileName = "settings.json";
+    static bool Preview => (typeof(UserPreferences).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+        .Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "").Contains('-');
+    static string FileName => Preview ? "settings-beta.json" : "settings.json";
 
     public string? GamePath { get; init; }
     public string? FontPath { get; init; }
+    public string? LatinFontPath { get; init; }
     public FontCoverage Coverage { get; init; } = FontCoverage.SimplifiedChinese | FontCoverage.English;
     public bool ChineseInterface { get; init; }
 
@@ -18,7 +21,7 @@ internal sealed class UserPreferences
     static string SettingsPath => Path.Combine(SettingsDirectory, FileName);
 
     public static UserPreferences Load()
-        => LoadFromPath(SettingsPath);
+        => LoadFromPath(Preview && !File.Exists(SettingsPath) ? Path.Combine(SettingsDirectory, "settings.json") : SettingsPath);
 
     internal static UserPreferences LoadFromPath(string path)
     {
@@ -33,10 +36,10 @@ internal sealed class UserPreferences
         catch (UnauthorizedAccessException) { return new UserPreferences(); }
     }
 
-    public static void Save(string gamePath, string fontPath, FontCoverage coverage, bool chineseInterface)
-        => SaveToPath(SettingsPath, gamePath, fontPath, coverage, chineseInterface);
+    public static void Save(string gamePath, string fontPath, FontCoverage coverage, bool chineseInterface, string? latinFontPath = null)
+        => SaveToPath(SettingsPath, gamePath, fontPath, coverage, chineseInterface, latinFontPath);
 
-    internal static void SaveToPath(string path, string gamePath, string fontPath, FontCoverage coverage, bool chineseInterface)
+    internal static void SaveToPath(string path, string gamePath, string fontPath, FontCoverage coverage, bool chineseInterface, string? latinFontPath = null)
     {
         if (!IsValidCoverage(coverage)) return;
         try
@@ -46,10 +49,11 @@ internal sealed class UserPreferences
             {
                 GamePath = gamePath,
                 FontPath = fontPath,
+                LatinFontPath = latinFontPath,
                 Coverage = coverage,
                 ChineseInterface = chineseInterface
             };
-            string temporaryPath = path + ".tmp";
+            string temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings));
             File.Move(temporaryPath, path, true);
         }
@@ -58,5 +62,5 @@ internal sealed class UserPreferences
     }
 
     static bool IsValidCoverage(FontCoverage coverage) =>
-        coverage != 0 && (coverage & ~(FontCoverage.SimplifiedChinese | FontCoverage.TraditionalChinese | FontCoverage.English)) == 0;
+        (coverage & ~FontCharacterSets.All) == 0;
 }

@@ -86,6 +86,15 @@ ascent + descent + leading。游戏 UI 的文本框坐标是照着原版字库�
 | fonts_zh | 1 | Noto Sans TC Regular | 17408 | 3072 | 853 |
 | fonts_zh | 5 | PFDINTextCondPro-Regular | 19157 | 5205 | 853 |
 | fonts_en | 1 / 3 / 5 | PF Din Text Cond Pro | 18100 / 18440 / 18900 | 4240 / 4240 / 4400 | 1860 / 2200 / 2820 |
+| fonts_ru / fonts_ua | 1 / 3 / 5 | 原版俄语／乌克兰语字体槽位 | 18100 / 18440 / 18900 | 4240 / 4240 / 4400 | 1860 / 2200 / 2820 |
+
+## 测试版字形组合 / Beta composition
+
+`CompositeFont` 按 Unicode 字符选择主字体或 Latin/digits 字体，以独立的虚拟 GlyphID 映射到 `(字体实例, 原 GlyphID)`，避免两个字体恰好使用相同 GlyphID 时发生碰撞。轮廓与 advance 都来自选中的同一个字体。Windows 读取层将两种字体统一为 16384 单位/em，再由 DefineFont3 写入 20480 单位/em；槽位的 ascent/descent/leading 继续使用游戏原版值。
+
+优先使用第二字体的范围为 U+0020–024F、U+0300–036F、U+1E00–1EFF、U+2000–218F；CJK 全角标点与西里尔字母优先使用主字体。优先来源缺字时尝试另一字体，两者均无字形则报告并省略。该设计组合 MOD 内的字形，不生成一个新的可安装 TTF。
+
+`scripts/extract_font_templates.py` 从本地安装提取字体注册骨架及字符表，去掉全部 DefineFont3 原字形。测试版新增 ru/ua 骨架，未嵌入原版字体轮廓。
 
 注意原版 `.redswf` 是 **CR2W（`CSwfResource`）**，里面再套一层 zlib 压缩的 SWF
 数据（CR2W 偏移处的 tag + u32 长度 + zlib 流）；MOD 里放裸 SWF 即可，游戏同样接受。
